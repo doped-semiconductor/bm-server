@@ -28,6 +28,9 @@ async function postHandler(request, response){
         
         //IMPORT BOOKMARKS FROM CLIENT - works
         if (request.body.instruction == 'import'){
+            if(request.body.data!=undefined){
+                response.send({data:'received',n :Object.keys(request.body.data).length});
+            }
             for (let i in request.body.data){ 
                 request.body.data[i].readlater = false
                 request.body.data[i].visits = 0 
@@ -55,8 +58,9 @@ async function postHandler(request, response){
                     })
                 }
             }
-            addRelations()
-            response.send({data:'received',n :Object.keys(request.body.data).length});
+            var neo = new njq.neo4jQueries()
+            await neo.addRelations()
+            //response.send({data:'received',n :Object.keys(request.body.data).length});
         }
         //GET RECENTS
         else if(request.body.instruction == 'recent'){

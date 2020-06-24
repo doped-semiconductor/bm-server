@@ -180,7 +180,6 @@ class neo4jQueries{
     }
     //FUNCTION - ADD FOLDER NODE TO DB
     async addFolder(bookmark){
-        //
         var driver = neo4j.driver(
             'bolt://localhost:7687',
             neo4j.auth.basic('neo4j', 'bookmarks')  
