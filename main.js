@@ -15,25 +15,26 @@ app.listen(5000);
 console.log("server on 5000");
 
 async function postHandler(request, response){
-    console.log(request.body.instruction);      // your JSON
-    //console.log(request.body.data.length);
+    console.log(request.body.instruction);  
+    /** check if content received */    
     if (Object.keys(request.body.data).length === 0) 
     {
         console.log('empty')
         response.send({data:'not recieved'});
     }
     else{
-        //imported bookmarks
+        //IMPORT BOOKMARKS FROM CLIENT
         if (request.body.instruction == 'import'){
-
-            for (let i in request.body.data){                
+            for (let i in request.body.data){ 
+                request.body.data[i].readlater = false
+                request.body.data[i].visits = 0                
                 if (!request.body.data[i].url){await addFolder(request.body.data[i])}
                 else{                    
                     await addBookmark(request.body.data[i])
                     var x = new ke.KeywordExtractor(request.body.data[i].url)
                     x.genKeys((keys)=>{
                         if (keys!=undefined){
-                            keys.forEach(async (el) => {
+                            keys.forEach((el) => {
                                 el.id = request.body.data[i].id
                                 console.log('el',el)
                                 addKeys(el)                    
@@ -46,9 +47,23 @@ async function postHandler(request, response){
                 }
             }
             addRelations()
+            response.send({data:'received',n :Object.keys(request.body.data).length});
         }
-        response.send({data:'received',n :Object.keys(request.body.data).length});    // echo the result back
-
+        //GENERATE TAGS
+        else if(request.body.instruction == 'tags'){
+            console.log('hello-tags-bod')
+            console.log('url',request.body.url)
+            if (url==undefined){
+                response.send({data:'not received'});
+            }
+            else{
+                var x = new ke.KeywordExtractor(request.body.url)
+                x.genKeys((keys)=>{
+                    console.log("keys",keys)
+                    response.send({data:'received',tags :keys});                
+                })
+            }                
+        } 
     };
 }
 
@@ -102,7 +117,7 @@ async function addBookmark(bookmark){
     var session = driver.session()
     try {    
         const result = await session.writeTransaction(tx =>
-          tx.run('MERGE (b: Bookmark {id:$id,title:$title,index:$index,url:$url,parent:$parent,date:$date}) return b',bookmark)
+          tx.run('MERGE (b: Bookmark {id:$id,title:$title,index:$index,url:$url,parent:$parent,date:$date,visits:$visits,rl:$readlater}) return b',bookmark)
           .then(res => {console.log('added: ',bookmark.title)})
           .catch(err =>{console.log(err.message)})
         )      
