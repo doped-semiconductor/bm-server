@@ -62,7 +62,7 @@ async function postHandler(request, response){
             await neo.addRelations()
             //response.send({data:'received',n :Object.keys(request.body.data).length});
         }
-        //GET RECENTS
+        //GET RECENTS - works
         else if(request.body.instruction == 'recent'){
             if(!request.body.data.lim){
                 console.log('lim not recieved')
@@ -74,7 +74,7 @@ async function postHandler(request, response){
                 response.send({data:'recieved',output:res})
             }
         }
-        //GET READ LATER
+        //GET READ LATER - works
         else if(request.body.instruction == 'later'){
             if(!request.body.data.lim){
                 console.log('lim not recieved')
@@ -86,7 +86,7 @@ async function postHandler(request, response){
                 response.send({data:'recieved',output:res})
             }
         }
-        //GENERATE TAGS - INCOMPLETE
+        //GENERATE TAGS - works
         else if(request.body.instruction == 'tags'){
             console.log('url',request.body.data.url)
             if (request.body.data.url==undefined){
@@ -94,10 +94,12 @@ async function postHandler(request, response){
                 response.send({data:'not received'});
             }
             else{
-                var x = new ke.KeywordExtractor(request.body.data)
-                x.genKeys((keys)=>{
-                    console.log("keys",keys)
-                    response.send({data:'received',tags :keys});                
+                var x = new ke.KeywordExtractor(request.body.data.url)
+                x.genKeys((keys)=>{  
+                    if (keys!=undefined){
+                        response.send({data:'received',tags :keys});
+                    }
+                    else{response.send({data:'received',tags :null});}
                 })
             }                
         }
@@ -155,6 +157,14 @@ async function postHandler(request, response){
                 }
             }
         }
+        //GIVE FOLDER TO ADD
+        else if(request.body.instruction == 'folder'){
+            var neo = new njq.neo4jQueries()
+            var out = await neo.DisplayFolder()
+            response.send({data:'received',output:out});
+
+        }
+
         //GIVE FILE NAVIGATION
         else if(request.body.instruction == 'files'){}
         
