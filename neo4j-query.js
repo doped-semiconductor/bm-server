@@ -27,6 +27,28 @@ class neo4jQueries{
         await driver.close()
         return output
     }
+    ////FUNCTION - SEARCH READ LATER
+    async RLBookmarks(n){
+        var output = [];
+        var driver = neo4j.driver(
+            'bolt://localhost:7687',
+            neo4j.auth.basic('neo4j', 'bookmarks')  
+        )
+        var session = driver.session()
+        try {    
+            const result = await session.writeTransaction(tx =>
+              tx.run('MATCH(b:Bookmark) WHERE b.rl = true RETURN b ORDER BY b.date DESC LIMIT $n',{n: n})
+              .then(res => {
+                  res.records.forEach(record=>{
+                      output.push(record.get(0).properties)})
+                  })
+              .catch(err =>{console.log(err.message)})
+            )      
+        }     
+        finally { await session.close() }  
+        await driver.close()
+        return output
+    }
     ////FUNCTION -SEARCH BY TITLE
     async SearchByTitle(title){
         var op = []

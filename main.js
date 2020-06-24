@@ -17,7 +17,7 @@ app.listen(5000);
 console.log("server on 5000");
 
 async function postHandler(request, response){
-    //console.log("req body:",request.body);  
+    console.log("req body:",request.body);  
     /** check if content received */    
     if (Object.keys(request.body.data).length === 0) 
     {
@@ -32,17 +32,21 @@ async function postHandler(request, response){
                 request.body.data[i].readlater = false
                 request.body.data[i].visits = 0 
                 request.body.data[i].title = request.body.data[i].title.toLowerCase()               
-                if (!request.body.data[i].url){await addFolder(request.body.data[i])}
-                else{                    
-                    await addBookmark(request.body.data[i])
+                if (!request.body.data[i].url){
+                    var neo = new njq.neo4jQueries()
+                    await neo.addFolder(request.body.data[i])
+                }
+                else{
+                    var neo = new njq.neo4jQueries()                    
+                    await neo.addBookmark(request.body.data[i])
                     var x = new ke.KeywordExtractor(request.body.data[i].url)
                     x.genKeys((keys)=>{
                         if (keys!=undefined){
-                            keys.forEach((el) => {
+                            keys.forEach(async (el) => {
                                 el.id = request.body.data[i].id
                                 //console.log('el',el)
                                 var neo = new njq.neo4jQueries()                
-                                var res = await neo.addKeys(el)  
+                                await neo.addKeys(el)  
                             })
                         }
                         else{
@@ -62,14 +66,26 @@ async function postHandler(request, response){
             }
             else{
                 var neo = new njq.neo4jQueries()
-                var res = await neo.RecentBookmarks(request.body.data.lim)
+                var res = await neo.RecentBookmarks(neo4j.int(request.body.data.lim))
+                response.send({data:'recieved',output:res})
+            }
+        }
+        //GET READ LATER
+        else if(request.body.instruction == 'later'){
+            if(!request.body.data.lim){
+                console.log('lim not recieved')
+                response.send({data:'not received'});
+            }
+            else{
+                var neo = new njq.neo4jQueries()
+                var res = await neo.RLBookmarks(neo4j.int(request.body.data.lim))
                 response.send({data:'recieved',output:res})
             }
         }
         //GENERATE TAGS - INCOMPLETE
         else if(request.body.instruction == 'tags'){
-            console.log('url',request.body.data)
-            if (request.body.data==undefined){
+            console.log('url',request.body.data.url)
+            if (request.body.data.url==undefined){
                 console.log('url not')
                 response.send({data:'not received'});
             }
