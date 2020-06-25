@@ -105,6 +105,10 @@ async function postHandler(request, response){
         }
         //ADD NEW BM - GENERATE ID INCOMPLETE
         else if(request.body.instruction == 'newbm'){
+            var neo1 = new njq.neo4jQueries()
+            var id = await neo1.MaxId(request.body.data)
+            request.body.data.id = (parseInt(id[0])+1).toString()
+            console.log('new bm obj',request.body.data)
             console.log('adding bm url',request.body.data.url)
             if ((request.body.data==undefined) || (request.body.data==[])){
                 console.log('data not received: ',request.body.data)
@@ -113,7 +117,11 @@ async function postHandler(request, response){
             else{
                 response.send({data:'received',x:1});
                 var neo = new njq.neo4jQueries()
-                await neo.addNewBookmark(request.body.data)                
+                //adds node connects to parent                
+                await neo.addNewBookmark(request.body.data) 
+                //keywords
+                console.log('id,tags:',request.body.data.id,request.body.data.tags)
+                await neo.userAddKeys(request.body.data.tags,request.body.data.id)               
             }
         }
         //SEARCH -  works
@@ -179,14 +187,26 @@ async function postHandler(request, response){
 
         }
 
+        //SIMILAR BOOKMARKS - works
+        else if(request.body.instruction == 'similar'){
+            if(!request.body.data){
+                console.log('similar not received',request.body)
+                response.send({data:'not received'})
+            }
+            else{
+                var neo = new njq.neo4jQueries()
+                var out = await neo.SimilarBookmarks(request.body.data)
+                response.send({data:'received',output:out});
+            }
+        }
+
         //GIVE FILE NAVIGATION
         else if(request.body.instruction == 'files'){}
         
         //DELETE FILE/BOOKMARK
         else if(request.body.instruction == 'delete'){}
-
-        //SIMILAR TAGS
-        else if(request.body.instruction == 'similar'){}
     };
 }
+
+
 

@@ -5,6 +5,72 @@ class neo4jQueries{
         this.session = null
         this.result = null        
     }
+    ////FUNCTION - ADD USER GIVEN KEYS
+    async userAddKeys(keywords,id){
+        var neo4j = require('neo4j-driver');                           
+            var driver = neo4j.driver(
+                'bolt://localhost:7687',
+                neo4j.auth.basic('neo4j', 'bookmarks')  
+            )
+            var session = driver.session()
+            try {    
+                const result = await session.writeTransaction(tx =>
+                  tx.run('MATCH(b:Bookmark) WHERE b.id=$id UNWIND $keywords AS keyword MERGE(key:Keyword {phrase:keyword}) MERGE((key)-[:KEYOF]->(b))',{keywords:keywords,id:id})
+                  .then(res => {
+                     // output.push(res.records[0].get(0))
+                     console.log('keywords added')
+                  })
+                  .catch(err =>{console.log(err.message)})
+                )}
+            finally { await session.close() }  
+            await driver.close()
+    
+    }
+    ////FUNCTION - GET ID
+    async MaxId(){
+        var output = [];
+        var neo4j = require('neo4j-driver');                           
+            var driver = neo4j.driver(
+                'bolt://localhost:7687',
+                neo4j.auth.basic('neo4j', 'bookmarks')  
+            )
+            var session = driver.session()
+            try {   
+                const result = await session.writeTransaction(tx =>
+                  tx.run('MATCH(n) return toString(max(toInteger(n.id))) as maxid')
+                  .then(res => {
+                    output.push(res.records[0].get('maxid'))                      
+                  })
+                  .catch(err =>{console.log('d')
+                      console.log(err)})
+                )}
+            finally { await session.close() }  
+            await driver.close()
+            return output
+    }
+    ////FUNCTION - SIMILAR BOOKMARKS
+    async SimilarBookmarks(id){
+        var output = [];
+        var neo4j = require('neo4j-driver');
+            var driver = neo4j.driver(
+                'bolt://localhost:7687',
+                neo4j.auth.basic('neo4j', 'bookmarks')  
+            )
+            var session = driver.session()
+            try {    
+                const result = await session.writeTransaction(tx =>
+                  tx.run('MATCH(b:Bookmark)<-[:KEYOF]-(k1:Keyword)-[:KEYOF *0..]->(b1:Bookmark) WHERE b.id=$id RETURN b1',{id:id})
+                  .then(res => {
+                      res.records.forEach(record=>{
+                          output.push(record.get(0).properties)})
+                      })
+                  .catch(err =>{console.log(err.message)})
+                )      
+            }     
+            finally { await session.close() }  
+            await driver.close()
+            return output
+    }
     ////FUNCTION -SEARCH RECENTS
     async RecentBookmarks(n){
         var output = [];
@@ -204,7 +270,7 @@ class neo4jQueries{
         var session = driver.session()
         try {    
             const result = await session.writeTransaction(tx =>
-            tx.run(`merge (n:Bookmark {id:$id,parent:$parent,url:$url,title:$title})`,bookmark)
+            tx.run(`merge (n:Bookmark {id:$id,parent:$parent,url:$url,title:$title,rl:$rl})`,bookmark)
             .then(res => {console.log('added BM node: ',bookmark.title)})
             .catch(err =>{console.log(err.message)})
             )
