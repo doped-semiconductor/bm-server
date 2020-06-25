@@ -18,10 +18,11 @@
   },
   "homepage": "https://github.com/doped-semiconductor/bm-server#readme",
   "dependencies": {
-    "express": "4.17.1",
     "body-parser": "1.19.0",
-    "node-readability": "3.0.0",
+    "cors": "^2.8.5",
+    "express": "4.17.1",
     "gramophone": "0.0.3",
-    "neo4j-driver": "*"
+    "neo4j-driver": "*",
+    "node-readability": "3.0.0"
   }
 }

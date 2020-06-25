@@ -41,8 +41,7 @@ class neo4jQueries{
                   .then(res => {
                     output.push(res.records[0].get('maxid'))                      
                   })
-                  .catch(err =>{console.log('d')
-                      console.log(err)})
+                  .catch(err =>{ console.log(err)})
                 )}
             finally { await session.close() }  
             await driver.close()
@@ -307,6 +306,7 @@ class neo4jQueries{
             return output
     }
     
+    //NAVIGATION DISPLAY
     async DisplayBookmarksUnderFolder(id){
         var output = [];
         var neo4j = require('neo4j-driver');
@@ -321,41 +321,54 @@ class neo4jQueries{
                     .then(r=>{
                         //console.log(r.reco)
                         r.records.forEach(record=>{output.push(record.get(0).properties)
-                        console.log(record.get(0).properties)})})
+                        })})
                     .catch(e=>{}))
-                    console.log("length: ",output.length)
-                    /*tx.run('MATCH(b:Bookmark) WHERE b.parent=$id RETURN b',{id:id})
-                    .then(res => {
-                        res.records.forEach(record=>
-                            {output.push(record.get(0).properties)})
-                    })
-                    .catch(err =>{console.log(err.message)})
-                ) 
-                console.log('sent no. of children 1:',output.length)
-                await session.writeTransaction(tx =>
-                    tx.run('MATCH(b:Folder) WHERE b.parent=$id RETURN b',{id:id})
-                    .then(res => {
-                        res.records.forEach(record=>{
-                            output.push(record.get(0).properties)})
-                        })
-                    .catch(err =>{console.log(err.message)})
-                  )*/
             }     
             finally { await session.close() }  
             await driver.close()
             console.log('sent no. of children:',output.length)
             return output
     }
-}
 
+    //DELETE FOLDER
+    async DeleteFolder(id){
+        var neo4j = require('neo4j-driver');
+        var driver = neo4j.driver(
+            'bolt://localhost:7687',
+            neo4j.auth.basic('neo4j', 'bookmarks')  
+        )
+        var session = driver.session()
+        try { 
+            const result = await session.writeTransaction(tx =>
+              tx.run('Match((n)-[c:CHILDOF *0..]->(f:Folder)) WHERE f.id=$id DETACH DELETE n,f',{id:id})
+              .then(res => {
+              })
+              .catch(err =>{console.log(err.message)})
+            )  
+        }     
+        finally { await session.close() }  
+        await driver.close()
+        
+    }
+
+    async DeleteBookmark(id){
+        var neo4j = require('neo4j-driver');
+        var driver = neo4j.driver(
+            'bolt://localhost:7687',
+            neo4j.auth.basic('neo4j', 'bookmarks')  
+        )
+        var session = driver.session()
+        try { 
+            const result = await session.writeTransaction(tx =>
+              tx.run('MATCH((b:Bookmark) WHERE b.id=$id DETACH DELETE b ',{id:id})
+              .then(res => {
+              })
+              .catch(err =>{console.log(err.message)})
+            )  
+               
+        }     
+        finally { await session.close() }  
+        await driver.close()
+    }
+}
 exports.neo4jQueries = neo4jQueries
-
-
-/** EXP 
-async function main(){
-    var p = new neo4jQueries()
-    var o = await p.RecentBookmarks()
-    console.log(o)
-}
-
-main()*/

@@ -1,10 +1,12 @@
 var neo4j = require('neo4j-driver')
 var express = require('express')
 var bodyParser = require('body-parser')
+var cors = require('cors')
 const fs = require('fs');
 var ke = require('./keywordextract')
 var njq = require('./neo4j-query')
 app = express()
+app.use(cors())
 app.use(bodyParser.urlencoded({
   extended: true
 }))
@@ -17,7 +19,7 @@ app.listen(5000);
 console.log("server on 5000");
 
 async function postHandler(request, response){
-    console.log("req body:",request.body);  
+    //console.log("req body:",request.body);  
     /** check if content received */    
     if (Object.keys(request.body.data).length === 0) 
     {
@@ -108,8 +110,8 @@ async function postHandler(request, response){
             var neo1 = new njq.neo4jQueries()
             var id = await neo1.MaxId(request.body.data)
             request.body.data.id = (parseInt(id[0])+1).toString()
-            console.log('new bm obj',request.body.data)
-            console.log('adding bm url',request.body.data.url)
+            console.log('new bm obj')
+            console.log('adding bm url')
             if ((request.body.data==undefined) || (request.body.data==[])){
                 console.log('data not received: ',request.body.data)
                 response.send({data:'not received'});
@@ -117,10 +119,8 @@ async function postHandler(request, response){
             else{
                 response.send({data:'received',x:1});
                 var neo = new njq.neo4jQueries()
-                //adds node connects to parent                
+                //adds node connects to parent  and keys               
                 await neo.addNewBookmark(request.body.data) 
-                //keywords
-                console.log('id,tags:',request.body.data.id,request.body.data.tags)
                 await neo.userAddKeys(request.body.data.tags,request.body.data.id)               
             }
         }
@@ -155,15 +155,13 @@ async function postHandler(request, response){
                     console.log('domain recieved: ',request.body.data)
                     //query with the tag
                     var neo = new njq.neo4jQueries()
-                    var res = await neo.SearchByDomain(request.body.data)
-                    console.log('res to send',res)
+                    var res = await neo.SearchByDomain(request.body.data)                    
                     //send response with results
                     response.send({data:'recieved',output:res})
                 }
             }
             //SEARCH BY TITLE
             else if (request.body.type==="byTitle"){
-                console.log('here')
                 if(!request.body.data){
                     console.log('title not recieved')
                     response.send({data:'not received'});
@@ -173,8 +171,6 @@ async function postHandler(request, response){
                     //query with the tag
                     var neo = new njq.neo4jQueries()
                     var res = await neo.SearchByTitle(request.body.data)
-                    //console.log('res to send',res)
-                    //send response with results
                     response.send({data:'recieved',output:res})
                 }
             }
@@ -214,7 +210,18 @@ async function postHandler(request, response){
         }
         
         //DELETE FILE/BOOKMARK
-        else if(request.body.instruction == 'delete'){}
+        else if(request.body.instruction == 'delete'){
+            if(request.body.data.type == 'bookmark'){
+                var neo = new njq.neo4jQueries()
+                await neo.DeleteBookmark(request.body.data.id)
+                response.send({'data':'received','status':'completed'})
+            }
+            else if(request.body.data.type == 'folder'){
+                var neo = new njq.neo4jQueries()
+                await neo.DeleteFolder(request.body.data.id)
+                response.send({'data':'received','status':'completed'})
+            }
+        }
     };
 }
 
