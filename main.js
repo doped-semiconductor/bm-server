@@ -201,7 +201,17 @@ async function postHandler(request, response){
         }
 
         //GIVE FILE NAVIGATION
-        else if(request.body.instruction == 'files'){}
+        else if(request.body.instruction == 'files'){
+            if(!request.body.data){
+                console.log('folder id not received',request.body)
+                response.send({data:'not received'})
+            }
+            else{
+                var neo = new njq.neo4jQueries()
+                var out = await neo.DisplayBookmarksUnderFolder(request.body.data)
+                response.send({data:'received',output:out});
+            }
+        }
         
         //DELETE FILE/BOOKMARK
         else if(request.body.instruction == 'delete'){}
