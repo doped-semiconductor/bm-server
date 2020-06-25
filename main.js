@@ -208,6 +208,19 @@ async function postHandler(request, response){
                 response.send({data:'received',output:out});
             }
         }
+
+        //ADD FOLDER
+        else if(request.body.instruction == 'newFold'){
+            if(!request.body.data){
+                console.log('folder id not received',request.body)
+                response.send({data:'not received'})
+            }
+            else{
+                var neo = new njq.neo4jQueries()
+                await neo.ADDFolder(request.body.data.pid,request.body.data.title)
+                response.send({data:'received',output:'success'});
+            }
+        }
         
         //DELETE FILE/BOOKMARK
         else if(request.body.instruction == 'delete'){

@@ -370,5 +370,25 @@ class neo4jQueries{
         finally { await session.close() }  
         await driver.close()
     }
+
+    async ADDFolder(pid,title){
+        var neo4j = require('neo4j-driver');
+            var driver = neo4j.driver(
+                'bolt://localhost:7687',
+                neo4j.auth.basic('neo4j', 'acms')  
+            )
+            var session = driver.session()
+            try {    
+                const result = await session.writeTransaction(tx =>
+                  tx.run('MERGE(f:Folder{title:$title,parent:$pid}) set f.date=date() RETURN f',{pid:pid,title:title})
+                  .then(res => {
+                      console.log(res);
+                  })
+                  .catch(err =>{console.log(err.message)})
+                )      
+            }     
+            finally { await session.close() }  
+            await driver.close()
+    }
 }
 exports.neo4jQueries = neo4jQueries
