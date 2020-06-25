@@ -103,54 +103,68 @@ async function postHandler(request, response){
                 })
             }                
         }
+        //ADD NEW BM - GENERATE ID INCOMPLETE
+        else if(request.body.instruction == 'newbm'){
+            console.log('adding bm url',request.body.data.url)
+            if ((request.body.data==undefined) || (request.body.data==[])){
+                console.log('data not received: ',request.body.data)
+                response.send({data:'not received'});
+            }
+            else{
+                response.send({data:'received',x:1});
+                var neo = new njq.neo4jQueries()
+                await neo.addNewBookmark(request.body.data)                
+            }
+        }
         //SEARCH -  works
         else if(request.body.instruction == 'search'){
             //SEARCH BY TAG
             console.log('search req recieved')
-            if (request.body.data.type=="byTag"){
+            if (request.body.type==="byTag"){
                 console.log('search by tag recieved')
                 //confirm received tag and on err send response
-                if(!request.body.data.tag){
+                if(!request.body.data){
                     console.log('tag not recieved')
                     response.send({data:'not received'});
                 }
                 else{
-                    request.body.data.tag = request.body.data.tag.toLowerCase()
-                    console.log('tag recieved: ',request.body.data.tag)
+                    request.body.data = request.body.data.toLowerCase()
+                    console.log('tag recieved: ',request.body.data)
                     //query with the tag    
                     var neo = new njq.neo4jQueries()                
-                    var res = await neo.SearchByTag(request.body.data.tag)
+                    var res = await neo.SearchByTag(request.body.data)
                     response.send({data:'recieved',output:res})
                 }
 
             }
             //SEARCH BY DOMAIN
-            else if (request.body.data.type=="byDomain"){
-                if(!request.body.data.domain){
+            else if (request.body.type==="byDomain"){
+                if(!request.body.data){
                     console.log('domain not recieved')
                     response.send({data:'not received'});
                 }
                 else{
-                    console.log('domain recieved: ',request.body.data.domain)
+                    console.log('domain recieved: ',request.body.data)
                     //query with the tag
                     var neo = new njq.neo4jQueries()
-                    var res = await neo.SearchByDomain(request.body.data.domain)
+                    var res = await neo.SearchByDomain(request.body.data)
                     console.log('res to send',res)
                     //send response with results
                     response.send({data:'recieved',output:res})
                 }
             }
             //SEARCH BY TITLE
-            else if (request.body.data.type=="byTitle"){
-                if(!request.body.data.title){
+            else if (request.body.type==="byTitle"){
+                console.log('here')
+                if(!request.body.data){
                     console.log('title not recieved')
                     response.send({data:'not received'});
                 }
                 else{
-                    console.log('title recieved: ',request.body.data.title)
+                    console.log('title recieved: ',request.body.data)
                     //query with the tag
                     var neo = new njq.neo4jQueries()
-                    var res = await neo.SearchByTitle(request.body.data.title)
+                    var res = await neo.SearchByTitle(request.body.data)
                     //console.log('res to send',res)
                     //send response with results
                     response.send({data:'recieved',output:res})
