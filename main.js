@@ -30,16 +30,19 @@ async function postHandler(request, response){
         
         //IMPORT BOOKMARKS FROM CLIENT - works
         if (request.body.instruction == 'import'){
+            var mid = 0
             if(request.body.data!=undefined){
                 response.send({data:'received',n :Object.keys(request.body.data).length});
             }
             for (let i in request.body.data){ 
+                
                 request.body.data[i].readlater = false
                 request.body.data[i].visits = 0 
                 request.body.data[i].title = request.body.data[i].title.toLowerCase()               
                 if (!request.body.data[i].url){
                     var neo = new njq.neo4jQueries()
                     await neo.addFolder(request.body.data[i])
+
                 }
                 else{
                     var neo = new njq.neo4jQueries()                    
@@ -59,6 +62,7 @@ async function postHandler(request, response){
                         }                        
                     })
                 }
+                
             }
             var neo = new njq.neo4jQueries()
             await neo.addRelations()
@@ -108,6 +112,7 @@ async function postHandler(request, response){
         //ADD NEW BM - GENERATE ID INCOMPLETE
         else if(request.body.instruction == 'newbm'){
             var neo1 = new njq.neo4jQueries()
+            
             var id = await neo1.MaxId(request.body.data)
             request.body.data.id = (parseInt(id[0])+1).toString()
             console.log('new bm obj')
@@ -216,11 +221,19 @@ async function postHandler(request, response){
                 response.send({data:'not received'})
             }
             else{
+                console.log('received addf req',request.body.data)            
                 var neo = new njq.neo4jQueries()
-                await neo.ADDFolder(request.body.data.pid,request.body.data.title)
+                //var pid = await neo.findParent(request.body.data.pname)
+                var fid = await neo.MaxId() 
+                var ind = parseInt(fid[0]) + 1 
+                console.log('fid',ind)              
+                await neo.ADDFolder2(request.body.data.title,request.body.data.pname,ind.toString())
                 response.send({data:'received',output:'success'});
             }
-        }
+        
+
+
+}
         
         //DELETE FILE/BOOKMARK
         else if(request.body.instruction == 'delete'){

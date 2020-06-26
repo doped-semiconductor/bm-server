@@ -37,7 +37,7 @@ class neo4jQueries{
             var session = driver.session()
             try {   
                 const result = await session.writeTransaction(tx =>
-                  tx.run('MATCH(n) return toString(max(toInteger(n.id))) as maxid')
+                  tx.run('match (n) where exists(n.id) return n.id as maxid order by n.date desc limit 1')
                   .then(res => {
                     output.push(res.records[0].get('maxid'))                      
                   })
@@ -124,7 +124,7 @@ class neo4jQueries{
         var session = driver.session()
         try {    
             const result = await session.writeTransaction(tx =>
-              tx.run('MATCH (b: Bookmark) WHERE b.title CONTAINS $title SET b.date=date() return b',{title:title})
+              tx.run('MATCH (b: Bookmark) WHERE b.title CONTAINS $title return b',{title:title})
               .then(res => {
                   res.records.forEach(record=>{
                       //console.log(record.get(0).properties)
@@ -148,7 +148,7 @@ class neo4jQueries{
         var session = driver.session()
         try {    
             const result = await session.writeTransaction(tx =>
-                tx.run('MATCH (b: Bookmark) WHERE b.url CONTAINS $domain SET b.date=date() return b',{domain:domain})
+                tx.run('MATCH (b: Bookmark) WHERE b.url CONTAINS $domain return b',{domain:domain})
                 .then(res => {
                     res.records.forEach(record=>{
                         op.push(record.get(0).properties)})
@@ -235,7 +235,7 @@ class neo4jQueries{
         var session = driver.session()
         try {    
             const result = await session.writeTransaction(tx =>
-            tx.run('MERGE (b: Bookmark {id:$id,title:$title,index:$index,url:$url,parent:$parent,date:$date,visits:$visits,rl:$readlater}) return b',bookmark)
+            tx.run('MERGE (b: Bookmark {id:$id,title:$title,index:$index,url:$url,parent:$parent,date:timestamp(),visits:$visits,rl:$readlater}) return b',bookmark)
             .then(res => {console.log('added: ',bookmark.title)})
             .catch(err =>{console.log(err.message)})
             )      
@@ -252,7 +252,7 @@ class neo4jQueries{
         var session = driver.session()
         try {    
             const result = await session.writeTransaction(tx =>
-            tx.run('MERGE (b: Folder {id:$id,title:$title,index:$index,parent:$parent,date:$date}) return b',bookmark)
+            tx.run('MERGE (b: Folder {id:$id,title:$title,index:$index,parent:$parent,date:timestamp()}) return b',bookmark)
             .then(res => {console.log('added: ',bookmark.title)})
             .catch(err =>{console.log(err.message)})
             )       
@@ -370,25 +370,61 @@ class neo4jQueries{
         finally { await session.close() }  
         await driver.close()
     }
+    //atempt 2
+    async ADDFolder2(new_title,old_title,id){
+        var neo4j = require('neo4j-driver');
+        var driver = neo4j.driver(
+            'bolt://localhost:7687',
+            neo4j.auth.basic('neo4j', 'bookmarks')  
+        )
+        var output=[]
+        var session = driver.session()
+        try {    
+            const result = await session.writeTransaction(tx =>
+              tx.run('MERGE(f:Folder{title:$new_title,id:$id}) set f.date=timestamp() MERGE(f1:Folder {title:$old_title})  MERGE((f)-[:CHILDOF]->(f1)) RETURN f1',{new_title:new_title,old_title:old_title,id:id})
+              .then(res => {
+                  console.log(res.records[0].get(0).properties.id);
+                  output.push(res.records[0].get(0).properties.id)
+              })
+              .catch(err =>{console.log(err.message)})
+            )      
+        }     
+        finally { await session.close() }  
+        await driver.close()
+        return output[0]
+    }
 
-    async ADDFolder(pid,title){
+    
+
+    async findParent(pname){
+        var op = []
         var neo4j = require('neo4j-driver');
             var driver = neo4j.driver(
                 'bolt://localhost:7687',
-                neo4j.auth.basic('neo4j', 'acms')  
+                neo4j.auth.basic('neo4j', 'bookmarks')  
             )
             var session = driver.session()
             try {    
                 const result = await session.writeTransaction(tx =>
-                  tx.run('MERGE(f:Folder{title:$title,parent:$pid}) set f.date=date() RETURN f',{pid:pid,title:title})
+                  tx.run('match (p:Folder) where p.title = $pname return p.id',{pname:pname})
                   .then(res => {
-                      console.log(res);
+                      res.records.forEach(record=>{
+                        op.push(record.get(0))})
                   })
                   .catch(err =>{console.log(err.message)})
                 )      
             }     
             finally { await session.close() }  
-            await driver.close()
+        await driver.close()
+        return op
     }
 }
 exports.neo4jQueries = neo4jQueries
+
+/**
+res => {
+                    res.records.forEach(record=>{
+                        op.push(record.get(0).properties)})
+                        //console.log(op)
+                    }
+*/
